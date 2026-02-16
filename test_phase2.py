@@ -50,7 +50,7 @@ def main():
                 modified_at=file.get("modifiedTime"),
                 text=text,
             )
-            embed_and_save(doc_id, text)
+            embed_and_save(doc_id, text, name=file["name"])
             print(f"  Indexiert (ID: {doc_id}, {len(text)} Zeichen)\n")
         finally:
             if os.path.exists(tmp_path):

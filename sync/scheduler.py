@@ -80,7 +80,7 @@ def sync_once():
                 modified_at=modified_at,
                 text=text,
             )
-            embed_and_save(doc_id, text)
+            embed_and_save(doc_id, text, name=file["name"])
 
             if is_new:
                 new_count += 1

@@ -23,7 +23,7 @@ def search(query: str, limit: int = 5) -> list[dict]:
 
 def _vector_search(query: str, limit: int) -> list[dict]:
     try:
-        query_vec = serialize(get_embedding(query))
+        query_vec = serialize(get_embedding(query, task_type="RETRIEVAL_QUERY"))
         conn = get_connection()
         rows = conn.execute("""
             SELECT d.id, d.file_id, d.name, d.mime_type, d.modified_at,
@@ -43,6 +43,8 @@ def _vector_search(query: str, limit: int) -> list[dict]:
 def _fts_search(query: str, limit: int) -> list[dict]:
     try:
         conn = _plain_connection()
+        # Mehrere Wörter mit OR verbinden, damit Teilbegriffe gefunden werden
+        fts_query = " OR ".join(f'"{w}"' for w in query.split() if w)
         rows = conn.execute("""
             SELECT d.id, d.file_id, d.name, d.mime_type, d.modified_at, d.text
             FROM documents_fts f
@@ -50,7 +52,7 @@ def _fts_search(query: str, limit: int) -> list[dict]:
             WHERE documents_fts MATCH ?
             ORDER BY rank
             LIMIT ?
-        """, (query, limit)).fetchall()
+        """, (fts_query, limit)).fetchall()
         conn.close()
         return [_row_to_dict(r, source="fts") for r in rows]
     except Exception as e:

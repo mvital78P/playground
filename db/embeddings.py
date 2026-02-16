@@ -9,7 +9,7 @@ from db.database import get_connection
 EMBEDDING_DIM = 3072  # gemini-embedding-001
 
 
-def _embed_gemini(text: str) -> list[float]:
+def _embed_gemini(text: str, task_type: str = "RETRIEVAL_DOCUMENT") -> list[float]:
     url = (
         "https://generativelanguage.googleapis.com/v1beta/models/"
         f"gemini-embedding-001:embedContent?key={config.GEMINI_API_KEY}"
@@ -17,7 +17,7 @@ def _embed_gemini(text: str) -> list[float]:
     payload = {
         "model": "models/gemini-embedding-001",
         "content": {"parts": [{"text": text}]},
-        "taskType": "RETRIEVAL_DOCUMENT",
+        "taskType": task_type,
     }
     response = requests.post(url, json=payload, timeout=30)
     response.raise_for_status()
@@ -34,7 +34,7 @@ def _embed_ollama(text: str) -> list[float]:
     return response.json()["embedding"]
 
 
-def get_embedding(text: str) -> list[float]:
+def get_embedding(text: str, task_type: str = "RETRIEVAL_DOCUMENT") -> list[float]:
     if not text or not text.strip():
         return [0.0] * EMBEDDING_DIM
 
@@ -43,7 +43,7 @@ def get_embedding(text: str) -> list[float]:
 
     if config.EMBEDDING_PROVIDER == "ollama":
         return _embed_ollama(text)
-    return _embed_gemini(text)
+    return _embed_gemini(text, task_type)
 
 
 def serialize(vector: list[float]) -> bytes:
@@ -67,6 +67,8 @@ def save_embedding(document_id: int, vector: list[float]):
     conn.close()
 
 
-def embed_and_save(document_id: int, text: str):
-    vector = get_embedding(text)
+def embed_and_save(document_id: int, text: str, name: str = ""):
+    # Wenn kein Text (z.B. gescannte PDF), Dateiname als Fallback verwenden
+    embedding_text = text if (text and text.strip()) else name
+    vector = get_embedding(embedding_text)
     save_embedding(document_id, vector)
