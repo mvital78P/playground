@@ -17,6 +17,12 @@ venv/
 *.db
 *.sqlite
 
+# Claude Code
+.claude/
+
+# Alte Backups
+mcp_disabled/
+
 # OS
 .DS_Store
 Thumbs.db
