@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "drive-search": {
+      "type": "stdio",
+      "command": "C:\\Python312\\python.exe",
+      "args": ["C:\\Users\\mvita\\repos\\playground\\drive_mcp\\server.py"]
+    }
+  }
+}
