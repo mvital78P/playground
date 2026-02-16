@@ -154,7 +154,18 @@ async def cmd_recent(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-async def handle_unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Freitext-Nachrichten als Suche behandeln."""
     if not _is_allowed(update):
         return
-    await update.message.reply_text("Unbekanntes Kommando. /help für Hilfe.")
+
+    query = (update.message.text or "").strip()
+    if not query:
+        return
+
+    msg = await update.message.reply_text(f'Suche nach "{query}"...')
+
+    results = search(query, limit=5)
+    text = format_search_results(results, query)
+
+    await msg.edit_text(text, parse_mode=ParseMode.HTML)

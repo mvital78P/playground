@@ -9,7 +9,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters
 import config
 from bot.handlers import (
     cmd_start, cmd_help, cmd_search, cmd_download,
-    cmd_status, cmd_recent, handle_unknown,
+    cmd_status, cmd_recent, handle_text,
 )
 
 logging.basicConfig(
@@ -40,8 +40,8 @@ def main():
     # /dl_<id> Links aus Suchergebnissen abfangen
     app.add_handler(MessageHandler(filters.Regex(r"^/dl_\d+"), cmd_download))
 
-    # Unbekannte Kommandos
-    app.add_handler(MessageHandler(filters.COMMAND, handle_unknown))
+    # Freitext → automatisch als Suche
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
     log.info("Bot läuft. Ctrl+C zum Beenden.")
     app.run_polling(drop_pending_updates=True)

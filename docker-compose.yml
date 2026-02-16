@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    container_name: drive-search
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./credentials.json:/app/credentials.json:ro
+      - ./token.json:/app/token.json
