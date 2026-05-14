@@ -1,11 +1,25 @@
 services:
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    restart: unless-stopped
+    volumes:
+      - ollama-data:/root/.ollama
+
   app:
     build: .
     container_name: drive-search
     restart: unless-stopped
+    depends_on:
+      - ollama
     env_file:
       - .env
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
     volumes:
       - ./data:/app/data
       - ./credentials.json:/app/credentials.json:ro
       - ./token.json:/app/token.json
+
+volumes:
+  ollama-data:

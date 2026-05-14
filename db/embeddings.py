@@ -6,7 +6,8 @@ import requests
 import config
 from db.database import get_connection
 
-EMBEDDING_DIM = 3072  # gemini-embedding-001
+EMBEDDING_DIMS = {"gemini": 3072, "ollama": 768}
+EMBEDDING_DIM = EMBEDDING_DIMS.get(config.EMBEDDING_PROVIDER, 768)
 
 
 def _embed_gemini(text: str, task_type: str = "RETRIEVAL_DOCUMENT") -> list[float]:
