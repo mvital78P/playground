@@ -27,8 +27,8 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await update.message.reply_text(
         "👋 <b>Drive Search Bot</b>\n\n"
-        "/search <Begriff> — Dokumente suchen\n"
-        "/ask <Frage> — Frage an Dokumente stellen\n"
+        "/search &lt;Begriff&gt; — Dokumente suchen\n"
+        "/ask &lt;Frage&gt; — Frage an Dokumente stellen\n"
         "/status — Statistik\n"
         "/recent — Zuletzt indexiert\n"
         "/help — Diese Hilfe",
@@ -68,9 +68,25 @@ async def cmd_ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     msg = await update.message.reply_text("🤔 Überlege...")
 
-    answer = ask_documents(query)
+    result = ask_documents(query)
+    answer = result["answer"]
+    sources = result.get("sources", [])
 
-    await msg.edit_text(answer, parse_mode=ParseMode.MARKDOWN)
+    # Antwort mit Quellenangaben formatieren
+    response = answer
+
+    if sources:
+        response += "\n\n📚 <b>Quellen:</b>\n"
+        for src in sources:
+            response += f"• {src['name']} (ID: {src['id']}, via {src['source']})\n"
+
+    # Parse-Fehler abfangen (falls Markdown/HTML-Zeichen Probleme machen)
+    try:
+        await msg.edit_text(response, parse_mode=ParseMode.HTML)
+    except Exception as e:
+        log.warning(f"Parse-Fehler bei /ask: {e}")
+        # Fallback: Ohne Parse-Mode senden
+        await msg.edit_text(response)
 
 
 async def cmd_download(update: Update, context: ContextTypes.DEFAULT_TYPE):

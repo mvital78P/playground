@@ -13,15 +13,25 @@ GOOGLE_SCOPES = [
 # Gemini
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
+# Anthropic (Claude)
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+
 # Telegram
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 _raw_user_id = os.getenv("TELEGRAM_ALLOWED_USER_ID", "0")
 TELEGRAM_ALLOWED_USER_ID = int(_raw_user_id) if _raw_user_id.isdigit() else 0
 
+# LLM Provider
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini")  # "gemini", "ollama", "lmstudio", or "claude"
+
+# LM Studio
+LMSTUDIO_HOST = os.getenv("LMSTUDIO_HOST", "http://localhost:1234/v1")
+
 # Embeddings
-EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "gemini")  # "gemini" or "ollama"
+EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "gemini")  # "gemini", "ollama", or "lmstudio"
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
+OLLAMA_LLM_MODEL = os.getenv("OLLAMA_LLM_MODEL", "llama3.1:8b")
 
 # Sync
 SYNC_INTERVAL_MINUTES = int(os.getenv("SYNC_INTERVAL_MINUTES", "5"))

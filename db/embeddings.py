@@ -6,7 +6,7 @@ import requests
 import config
 from db.database import get_connection
 
-EMBEDDING_DIMS = {"gemini": 3072, "ollama": 768}
+EMBEDDING_DIMS = {"gemini": 3072, "ollama": 768, "lmstudio": 768}
 EMBEDDING_DIM = EMBEDDING_DIMS.get(config.EMBEDDING_PROVIDER, 768)
 
 
@@ -35,6 +35,19 @@ def _embed_ollama(text: str) -> list[float]:
     return response.json()["embedding"]
 
 
+def _embed_lmstudio(text: str) -> list[float]:
+    """Generiert Embeddings mit LM Studio (OpenAI-kompatible API)."""
+    response = requests.post(
+        f"{config.LMSTUDIO_HOST}/embeddings",
+        json={"input": text},
+        timeout=30,
+    )
+    response.raise_for_status()
+    data = response.json()
+    # OpenAI-Format: data[0].embedding
+    return data["data"][0]["embedding"]
+
+
 def get_embedding(text: str, task_type: str = "RETRIEVAL_DOCUMENT") -> list[float]:
     if not text or not text.strip():
         return [0.0] * EMBEDDING_DIM
@@ -44,6 +57,8 @@ def get_embedding(text: str, task_type: str = "RETRIEVAL_DOCUMENT") -> list[floa
 
     if config.EMBEDDING_PROVIDER == "ollama":
         return _embed_ollama(text)
+    elif config.EMBEDDING_PROVIDER == "lmstudio":
+        return _embed_lmstudio(text)
     return _embed_gemini(text, task_type)
 
 

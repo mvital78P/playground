@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Drive Search Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        h1 {
+            font-size: 3em;
+            font-weight: 800;
+            background: linear-gradient(120deg, #667eea, #764ba2, #f093fb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #a0aec0;
+            font-size: 1.1em;
+        }
+
+        /* Restart All Button - Hero Style */
+        .restart-all-section {
+            margin-bottom: 30px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .btn-restart-all {
+            width: 100%;
+            padding: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 20px;
+            font-size: 1.3em;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 40px rgba(102, 126, 234, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .btn-restart-all:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 50px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-restart-all:active {
+            transform: translateY(-1px);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            transition: all 0.3s ease;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .card h2 {
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+        }
+
+        .card p {
+            color: #a0aec0;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+        }
+
+        .status-indicator {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .status-running {
+            background: #10b981;
+            box-shadow: 0 0 20px #10b981, 0 0 40px rgba(16, 185, 129, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .status-stopped {
+            background: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .service-controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .message {
+            margin-top: 15px;
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-size: 0.9em;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .message.success {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid #10b981;
+            color: #10b981;
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+        }
+
+        .telegram-link {
+            display: block;
+            text-align: center;
+            padding: 15px;
+            background: linear-gradient(135deg, #0088cc, #006ba1);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .telegram-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 136, 204, 0.4);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .info-item {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-item label {
+            display: block;
+            font-size: 0.85em;
+            color: #a0aec0;
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-item value {
+            display: block;
+            font-size: 1.2em;
+            color: white;
+            font-weight: 700;
+        }
+
+        .sync-output {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #10b981;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            max-height: 250px;
+            overflow-y: auto;
+            display: none;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .config-card {
+            grid-column: 1 / -1;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Drive Search Dashboard</h1>
+            <p class="subtitle">Manage your Google Drive search infrastructure</p>
+        </div>
+
+        <!-- Restart All Button -->
+        <div class="restart-all-section">
+            <button class="btn-restart-all" onclick="restartAll()">
+                <span style="font-size: 1.5em;">🔄</span>
+                <span>ALLES NEU STARTEN</span>
+            </button>
+            <div class="message" id="msg-restart-all"></div>
+        </div>
+
+        <div class="grid">
+            <!-- MCP Server -->
+            <div class="card">
+                <h2>
+                    <span class="status-indicator" id="status-mcp"></span>
+                    MCP Server
+                </h2>
+                <p>Claude Code Integration</p>
+                <div class="service-controls">
+                    <button class="btn btn-start" onclick="startService('mcp_server')"><span>Start</span></button>
+                    <button class="btn btn-stop" onclick="stopService('mcp_server')"><span>Stop</span></button>
+                </div>
+                <div class="message" id="msg-mcp"></div>
+            </div>
+
+            <!-- Telegram Bot -->
+            <div class="card">
+                <h2>
+                    <span class="status-indicator" id="status-telegram"></span>
+                    Telegram Bot
+                </h2>
+                <p>Chat-Interface für Dokumente</p>
+                <div class="service-controls">
+                    <button class="btn btn-start" onclick="startService('telegram_bot')"><span>Start</span></button>
+                    <button class="btn btn-stop" onclick="stopService('telegram_bot')"><span>Stop</span></button>
+                </div>
+                <a href="https://t.me/YOUR_BOT_USERNAME" class="telegram-link" target="_blank">
+                    📱 Bot in Telegram öffnen
+                </a>
+                <div class="message" id="msg-telegram"></div>
+            </div>
+
+            <!-- Sync Scheduler -->
+            <div class="card">
+                <h2>
+                    <span class="status-indicator" id="status-sync"></span>
+                    Sync Scheduler
+                </h2>
+                <p>Auto-Sync alle 5 Minuten</p>
+                <div class="service-controls">
+                    <button class="btn btn-start" onclick="startService('sync_scheduler')"><span>Start</span></button>
+                    <button class="btn btn-stop" onclick="stopService('sync_scheduler')"><span>Stop</span></button>
+                </div>
+                <div class="message" id="msg-sync"></div>
+            </div>
+
+            <!-- Manual Sync -->
+            <div class="card">
+                <h2>🔄 Manueller Sync</h2>
+                <p>Einmaliger Sync-Durchlauf</p>
+                <button class="btn btn-primary" onclick="runSync()" style="width: 100%; margin-top: 15px;">
+                    <span>Jetzt synchronisieren</span>
+                </button>
+                <div class="sync-output" id="sync-output"></div>
+                <div class="message" id="msg-manual-sync"></div>
+            </div>
+        </div>
+
+        <!-- Configuration Card -->
+        <div class="card config-card">
+            <h2>⚙️ Konfiguration</h2>
+            <div class="info-grid" id="config-grid">
+                <div class="info-item">
+                    <label>LLM Provider</label>
+                    <value id="config-llm">Laden...</value>
+                </div>
+                <div class="info-item">
+                    <label>Embedding Provider</label>
+                    <value id="config-embed">Laden...</value>
+                </div>
+                <div class="info-item">
+                    <label>LM Studio Host</label>
+                    <value id="config-host">Laden...</value>
+                </div>
+                <div class="info-item">
+                    <label>Sync Intervall</label>
+                    <value id="config-interval">Laden...</value>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update status
+        function updateStatus() {
+            fetch('/api/status')
+                .then(res => res.json())
+                .then(data => {
+                    updateIndicator('mcp', data.mcp_server);
+                    updateIndicator('telegram', data.telegram_bot);
+                    updateIndicator('sync', data.sync_scheduler);
+                });
+        }
+
+        function updateIndicator(name, status) {
+            const indicator = document.getElementById(`status-${name}`);
+            indicator.className = 'status-indicator';
+            indicator.classList.add(status === 'running' ? 'status-running' : 'status-stopped');
+        }
+
+        function showMessage(name, text, isError = false) {
+            const msg = document.getElementById(`msg-${name}`);
+            msg.textContent = text;
+            msg.className = 'message';
+            msg.classList.add(isError ? 'error' : 'success');
+            msg.style.display = 'block';
+            setTimeout(() => {
+                msg.style.display = 'none';
+            }, 5000);
+        }
+
+        function startService(service) {
+            fetch(`/api/start/${service}`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    const name = service.replace('_', '-');
+                    showMessage(name, data.message, !data.success);
+                    updateStatus();
+                });
+        }
+
+        function stopService(service) {
+            fetch(`/api/stop/${service}`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    const name = service.replace('_', '-');
+                    showMessage(name, data.message, !data.success);
+                    updateStatus();
+                });
+        }
+
+        function restartAll() {
+            const btn = event.target.closest('.btn-restart-all');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> <span>Wird neu gestartet...</span>';
+
+            fetch('/api/restart_all', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span style="font-size: 1.5em;">🔄</span> <span>ALLES NEU STARTEN</span>';
+                    showMessage('restart-all', data.message, !data.success);
+                    updateStatus();
+                });
+        }
+
+        function runSync() {
+            const btn = event.target;
+            const output = document.getElementById('sync-output');
+            const msg = document.getElementById('msg-manual-sync');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> <span>Synchronisiere...</span>';
+            output.style.display = 'block';
+            output.textContent = 'Sync gestartet...\n';
+
+            fetch('/api/run_sync', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>Jetzt synchronisieren</span>';
+
+                    if (data.success) {
+                        output.textContent += data.output;
+                        showMessage('manual-sync', 'Sync erfolgreich!', false);
+                    } else {
+                        output.textContent += data.error || data.message;
+                        showMessage('manual-sync', 'Sync fehlgeschlagen', true);
+                    }
+                });
+        }
+
+        function loadConfig() {
+            fetch('/api/config')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('config-llm').textContent = data.llm_provider;
+                    document.getElementById('config-embed').textContent = data.embedding_provider;
+                    document.getElementById('config-host').textContent = data.lmstudio_host;
+                    document.getElementById('config-interval').textContent = data.sync_interval + ' Minuten';
+                });
+        }
+
+        // Initial load
+        updateStatus();
+        loadConfig();
+
+        // Auto-refresh every 2 seconds
+        setInterval(updateStatus, 2000);
+    </script>
+</body>
+</html>

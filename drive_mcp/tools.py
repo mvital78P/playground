@@ -108,11 +108,13 @@ def list_documents(limit: int = 20, offset: int = 0, mime_filter: str = "") -> d
 def ask_docs(query: str, limit: int = 5) -> dict:
     """
     Frage an die Dokumente stellen (RAG).
+    Gibt Antwort und verwendete Quellen zurück.
     """
-    answer = db_ask(query, limit=limit)
+    result = db_ask(query, limit=limit)
     return {
         "query": query,
-        "answer": answer
+        "answer": result["answer"],
+        "sources": result["sources"]
     }
 
 

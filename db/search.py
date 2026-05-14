@@ -136,26 +136,109 @@ def _row_to_dict(row, source: str) -> dict:
     }
 
 
-def ask_documents(query: str, limit: int = 5) -> str:
+def _extract_relevant_snippets(text: str, query: str, max_snippets: int = 3, snippet_size: int = 600) -> str:
+    """
+    Extrahiert relevante Textausschnitte basierend auf Suchbegriffen.
+    Verbessert: Verteilt Snippets gleichmäßig über alle wichtigen Query-Terme.
+    """
+    if not text:
+        return "Kein Inhalt verfügbar"
+
+    # Query-Begriffe extrahieren (ohne Stoppwörter)
+    cleaned_query = _clean_query(query)
+    terms = [w.lower() for w in cleaned_query.split() if len(w) > 2]
+
+    if not terms:
+        # Fallback: Anfang des Textes
+        return text[:snippet_size * 2] + "..." if len(text) > snippet_size * 2 else text
+
+    text_lower = text.lower()
+
+    # Sammle EINE beste Position pro Term (faire Verteilung)
+    term_positions = {}
+    for term in terms:
+        pos = text_lower.find(term)
+        if pos != -1:
+            term_positions[term] = pos
+
+    # Falls keine Treffer: Anfang des Dokuments
+    if not term_positions:
+        return text[:snippet_size * 2] + "..." if len(text) > snippet_size * 2 else text
+
+    # Sortiere Positionen und extrahiere Snippets
+    snippets = []
+    positions_used = set()
+
+    # Pro Term: beste Position finden
+    sorted_terms = sorted(term_positions.items(), key=lambda x: x[1])
+
+    for term, pos in sorted_terms:
+        # Snippet rund um die Fundstelle
+        start = max(0, pos - snippet_size // 2)
+        end = min(len(text), pos + len(term) + snippet_size // 2)
+
+        # Überlappung prüfen
+        overlap = False
+        for used_start, used_end in positions_used:
+            if not (end < used_start or start > used_end):
+                overlap = True
+                break
+
+        if not overlap:
+            snippet = text[start:end].strip()
+            if start > 0:
+                snippet = "..." + snippet
+            if end < len(text):
+                snippet = snippet + "..."
+            snippets.append(snippet)
+            positions_used.add((start, end))
+
+            if len(snippets) >= max_snippets:
+                break
+
+    return "\n\n[...]\n\n".join(snippets)
+
+
+def ask_documents(query: str, limit: int = 5) -> dict:
     """
     Sucht nach relevanten Dokumenten und generiert eine Antwort auf die Frage.
+    Verwendet intelligente Snippet-Extraktion statt voller Dokumente.
     """
     results = search(query, limit=limit)
     if not results:
-        return "Ich konnte keine Dokumente finden, die für deine Frage relevant sind."
+        return {
+            "answer": "Ich konnte keine Dokumente finden, die für deine Frage relevant sind.",
+            "sources": []
+        }
 
-    # Kontext für das LLM aufbauen
+    # Kontext für das LLM aufbauen mit relevanten Snippets
     context_parts = []
+    sources = []
+
     for r in results:
-        # Voller Text aus der DB holen (search() gibt nur preview zurück)
-        conn = _plain_connection()
-        row = conn.execute("SELECT text FROM documents WHERE id = ?", (r["id"],)).fetchone()
-        conn.close()
-        
-        full_text = row["text"] if row and row["text"] else "Kein Inhalt verfügbar"
-        context_parts.append(f"DOKUMENT: {r['name']} (ID: {r['id']})\nINHALT: {full_text}")
+        full_text = r.get("text", "") or ""
+
+        # Extrahiere NUR relevante Snippets basierend auf Query
+        # Mehr und längere Snippets für bessere Abdeckung
+        relevant_snippets = _extract_relevant_snippets(full_text, query, max_snippets=8, snippet_size=1200)
+
+        context_parts.append(
+            f"DOKUMENT: {r['name']} (ID: {r['id']})\n"
+            f"RELEVANTE AUSSCHNITTE:\n{relevant_snippets}"
+        )
+
+        sources.append({
+            "id": r["id"],
+            "name": r["name"],
+            "source": r.get("source", "unknown")
+        })
 
     context = "\n\n---\n\n".join(context_parts)
-    
+
     # Antwort generieren
-    return generate_answer(query, context)
+    answer = generate_answer(query, context)
+
+    return {
+        "answer": answer,
+        "sources": sources
+    }
