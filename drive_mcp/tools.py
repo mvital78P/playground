@@ -1,7 +1,7 @@
 """
 MCP Tool-Implementierungen: search_documents, get_document, list_documents.
 """
-from db.search import search as db_search
+from db.search import search as db_search, ask_documents as db_ask
 from db.database import _plain_connection, get_stats
 
 
@@ -102,6 +102,17 @@ def list_documents(limit: int = 20, offset: int = 0, mime_filter: str = "") -> d
             }
             for r in rows
         ],
+    }
+
+
+def ask_docs(query: str, limit: int = 5) -> dict:
+    """
+    Frage an die Dokumente stellen (RAG).
+    """
+    answer = db_ask(query, limit=limit)
+    return {
+        "query": query,
+        "answer": answer
     }
 
 

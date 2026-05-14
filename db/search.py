@@ -1,5 +1,6 @@
 from db.database import get_connection, _plain_connection
 from db.embeddings import get_embedding, serialize, EMBEDDING_DIM
+from db.llm import generate_answer
 
 # Maximale cosine distance — alles darüber ist nicht relevant genug
 MAX_DISTANCE = 0.40
@@ -130,5 +131,31 @@ def _row_to_dict(row, source: str) -> dict:
         "mime_type": row["mime_type"],
         "modified_at": row["modified_at"],
         "preview": text[:200].replace("\n", " "),
+        "text": text,
         "source": source,
     }
+
+
+def ask_documents(query: str, limit: int = 5) -> str:
+    """
+    Sucht nach relevanten Dokumenten und generiert eine Antwort auf die Frage.
+    """
+    results = search(query, limit=limit)
+    if not results:
+        return "Ich konnte keine Dokumente finden, die für deine Frage relevant sind."
+
+    # Kontext für das LLM aufbauen
+    context_parts = []
+    for r in results:
+        # Voller Text aus der DB holen (search() gibt nur preview zurück)
+        conn = _plain_connection()
+        row = conn.execute("SELECT text FROM documents WHERE id = ?", (r["id"],)).fetchone()
+        conn.close()
+        
+        full_text = row["text"] if row and row["text"] else "Kein Inhalt verfügbar"
+        context_parts.append(f"DOKUMENT: {r['name']} (ID: {r['id']})\nINHALT: {full_text}")
+
+    context = "\n\n---\n\n".join(context_parts)
+    
+    # Antwort generieren
+    return generate_answer(query, context)

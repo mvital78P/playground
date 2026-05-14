@@ -8,7 +8,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
 import config
 from bot.handlers import (
-    cmd_start, cmd_help, cmd_search, cmd_download,
+    cmd_start, cmd_help, cmd_search, cmd_ask, cmd_download,
     cmd_status, cmd_recent, handle_text,
 )
 
@@ -33,6 +33,7 @@ def main():
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help", cmd_help))
     app.add_handler(CommandHandler("search", cmd_search))
+    app.add_handler(CommandHandler("ask", cmd_ask))
     app.add_handler(CommandHandler("download", cmd_download))
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("recent", cmd_recent))

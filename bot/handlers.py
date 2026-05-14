@@ -10,7 +10,7 @@ from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 
 import config
-from db.search import search
+from db.search import search, ask_documents
 from db.database import get_stats, get_document_by_file_id, _plain_connection
 from bot.formatter import format_search_results, format_status, format_recent
 from sync.drive_client import build_service, download_file
@@ -27,7 +27,8 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await update.message.reply_text(
         "👋 <b>Drive Search Bot</b>\n\n"
-        "/search &lt;Begriff&gt; — Dokumente suchen\n"
+        "/search <Begriff> — Dokumente suchen\n"
+        "/ask <Frage> — Frage an Dokumente stellen\n"
         "/status — Statistik\n"
         "/recent — Zuletzt indexiert\n"
         "/help — Diese Hilfe",
@@ -54,6 +55,22 @@ async def cmd_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = format_search_results(results, query)
 
     await msg.edit_text(text, parse_mode=ParseMode.HTML)
+
+
+async def cmd_ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not _is_allowed(update):
+        return
+
+    query = " ".join(context.args).strip()
+    if not query:
+        await update.message.reply_text("Verwendung: /ask <Deine Frage>")
+        return
+
+    msg = await update.message.reply_text("🤔 Überlege...")
+
+    answer = ask_documents(query)
+
+    await msg.edit_text(answer, parse_mode=ParseMode.MARKDOWN)
 
 
 async def cmd_download(update: Update, context: ContextTypes.DEFAULT_TYPE):

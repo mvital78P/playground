@@ -11,7 +11,7 @@ project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
 from mcp.server.fastmcp import FastMCP
-from drive_mcp.tools import search_documents, get_document, list_documents, get_db_stats
+from drive_mcp.tools import search_documents, get_document, list_documents, get_db_stats, ask_docs
 
 mcp = FastMCP("drive-search")
 
@@ -54,6 +54,20 @@ def list_docs(limit: int = 20, offset: int = 0, mime_filter: str = "") -> str:
         mime_filter: Optionaler Filter, z.B. 'pdf', 'word', 'spreadsheet'
     """
     result = list_documents(limit=limit, offset=offset, mime_filter=mime_filter)
+    return json.dumps(result, ensure_ascii=False, indent=2)
+
+
+@mcp.tool()
+def ask(query: str, limit: int = 5) -> str:
+    """
+    Frage an die Dokumente stellen (RAG).
+    Sucht relevante Dokumente und generiert eine Antwort.
+
+    Args:
+        query: Die Frage an die Dokumente.
+        limit: Maximale Anzahl Ergebnisse für die Suche (Standard: 5).
+    """
+    result = ask_docs(query, limit=limit)
     return json.dumps(result, ensure_ascii=False, indent=2)
 
 
