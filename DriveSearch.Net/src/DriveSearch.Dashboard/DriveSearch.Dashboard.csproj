@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\DriveSearch.Core\DriveSearch.Core.csproj" />
+    <ProjectReference Include="..\DriveSearch.Infrastructure\DriveSearch.Infrastructure.csproj" />
+    <ProjectReference Include="..\DriveSearch.Application\DriveSearch.Application.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

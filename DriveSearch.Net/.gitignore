@@ -1,0 +1,29 @@
+# Sensitive files - DO NOT COMMIT
+credentials.json
+token.json
+.env
+
+# Build results
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+
+# Database
+data/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio
+.vs/
+
+# Rider
+.idea/
+
+# Mac
+.DS_Store
+Google.Apis.Auth.OAuth2.Responses.TokenResponse-user
