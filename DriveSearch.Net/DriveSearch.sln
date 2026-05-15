@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DriveSearch.TelegramBot", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DriveSearch.SyncService", "src\DriveSearch.SyncService\DriveSearch.SyncService.csproj", "{EEBDCD81-4F85-47B7-9399-767BA7733550}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DriveSearch.McpServer", "src\DriveSearch.McpServer\DriveSearch.McpServer.csproj", "{7E9389AF-9CD1-440A-A84A-C00797074E42}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -99,6 +101,18 @@ Global
 		{EEBDCD81-4F85-47B7-9399-767BA7733550}.Release|x64.Build.0 = Release|Any CPU
 		{EEBDCD81-4F85-47B7-9399-767BA7733550}.Release|x86.ActiveCfg = Release|Any CPU
 		{EEBDCD81-4F85-47B7-9399-767BA7733550}.Release|x86.Build.0 = Release|Any CPU
+		{7E9389AF-9CD1-440A-A84A-C00797074E42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7E9389AF-9CD1-440A-A84A-C00797074E42}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7E9389AF-9CD1-440A-A84A-C00797074E42}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7E9389AF-9CD1-440A-A84A-C00797074E42}.Debug|x64.Build.0 = Debug|Any CPU
+		{7E9389AF-9CD1-440A-A84A-C00797074E42}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7E9389AF-9CD1-440A-A84A-C00797074E42}.Debug|x86.Build.0 = Debug|Any CPU
+		{7E9389AF-9CD1-440A-A84A-C00797074E42}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7E9389AF-9CD1-440A-A84A-C00797074E42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7E9389AF-9CD1-440A-A84A-C00797074E42}.Release|x64.ActiveCfg = Release|Any CPU
+		{7E9389AF-9CD1-440A-A84A-C00797074E42}.Release|x64.Build.0 = Release|Any CPU
+		{7E9389AF-9CD1-440A-A84A-C00797074E42}.Release|x86.ActiveCfg = Release|Any CPU
+		{7E9389AF-9CD1-440A-A84A-C00797074E42}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -110,5 +124,6 @@ Global
 		{CFA422F7-9C92-402F-94F4-DFDBA878A0E7} = {7CCD377C-B2EC-4917-B2EE-B51FFAEA170C}
 		{7FC8C5E1-D2B3-4D70-AFD8-52E57480D3A8} = {7CCD377C-B2EC-4917-B2EE-B51FFAEA170C}
 		{EEBDCD81-4F85-47B7-9399-767BA7733550} = {7CCD377C-B2EC-4917-B2EE-B51FFAEA170C}
+		{7E9389AF-9CD1-440A-A84A-C00797074E42} = {7CCD377C-B2EC-4917-B2EE-B51FFAEA170C}
 	EndGlobalSection
 EndGlobal

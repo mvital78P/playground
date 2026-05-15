@@ -127,4 +127,21 @@ public class DocumentRepository : IDocumentRepository
             .Take(limit)
             .ToListAsync();
     }
+
+    public async Task<(int total, List<Document> documents)> ListDocumentsAsync(int limit, int offset, string? mimeFilter)
+    {
+        var query = _context.Documents.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(mimeFilter))
+            query = query.Where(d => d.MimeType.Contains(mimeFilter));
+
+        var total = await query.CountAsync();
+        var documents = await query
+            .OrderByDescending(d => d.ModifiedAt)
+            .Skip(offset)
+            .Take(limit)
+            .ToListAsync();
+
+        return (total, documents);
+    }
 }

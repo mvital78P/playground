@@ -134,11 +134,8 @@ public class BotService : BackgroundService
         }
         else
         {
-            await botClient.SendMessage(
-                chatId: chatId,
-                text: "❓ Unbekannter Befehl. Verwende /help für eine Liste der verfügbaren Befehle.",
-                cancellationToken: ct
-            );
+            // Free text → treat as RAG question
+            await HandleAskCommand(botClient, chatId, text, ct);
         }
     }
 

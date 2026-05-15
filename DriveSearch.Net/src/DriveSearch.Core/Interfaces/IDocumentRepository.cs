@@ -47,4 +47,9 @@ public interface IDocumentRepository
     /// Gets the most recently indexed documents.
     /// </summary>
     Task<List<Document>> GetRecentDocumentsAsync(int limit = 10);
+
+    /// <summary>
+    /// Lists documents with pagination and optional MIME type filter.
+    /// </summary>
+    Task<(int total, List<Document> documents)> ListDocumentsAsync(int limit, int offset, string? mimeFilter);
 }
