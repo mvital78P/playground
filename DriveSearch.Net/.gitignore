@@ -9,8 +9,9 @@ obj/
 [Dd]ebug/
 [Rr]elease/
 
-# Database
+# Database files (but not the Infrastructure/Data source folder)
 data/
+!src/**/Data/*.cs
 
 # User-specific files
 *.user
