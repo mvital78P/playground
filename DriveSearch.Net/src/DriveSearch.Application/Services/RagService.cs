@@ -84,11 +84,16 @@ public class RagService
 
         Console.WriteLine($"[RagService] Answer generated successfully, length: {answer?.Length ?? 0}");
 
-        // Step 5: Return result with sources
+        var sourceDocuments = searchResults
+            .Select(r => r.Document)
+            .DistinctBy(d => d.FileId)
+            .ToList();
+
         return new RagResult
         {
             Answer = answer,
-            Sources = searchResults.Select(r => r.Document.Name).Distinct().ToList(),
+            Sources = sourceDocuments.Select(d => d.Name).ToList(),
+            SourceDocuments = sourceDocuments,
             DocumentCount = searchResults.Count,
             ProviderUsed = llmProvider.ProviderName
         };
@@ -100,23 +105,19 @@ public class RagService
 /// </summary>
 public class RagResult
 {
-    /// <summary>
-    /// Generated answer to the question.
-    /// </summary>
     public required string Answer { get; set; }
 
     /// <summary>
-    /// List of source document names used for the answer.
+    /// Source document names (for backward compatibility with MCP server).
     /// </summary>
     public required List<string> Sources { get; set; }
 
     /// <summary>
-    /// Number of documents retrieved.
+    /// Full source documents including FileId for generating Drive links.
     /// </summary>
+    public List<DriveSearch.Core.Models.Document> SourceDocuments { get; set; } = [];
+
     public int DocumentCount { get; set; }
 
-    /// <summary>
-    /// Name of the LLM provider used (e.g., "Gemini", "Claude").
-    /// </summary>
     public string? ProviderUsed { get; set; }
 }

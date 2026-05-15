@@ -23,8 +23,9 @@ public static class ResponseFormatter
         {
             var result = results[i];
             var doc = result.Document;
+            var driveUrl = $"https://drive.google.com/open?id={doc.FileId}";
 
-            sb.AppendLine($"{i + 1}. 📄 <b>{EscapeHtml(doc.Name)}</b>");
+            sb.AppendLine($"{i + 1}. 📄 <a href=\"{driveUrl}\"><b>{EscapeHtml(doc.Name)}</b></a>");
 
             if (!string.IsNullOrWhiteSpace(doc.Text))
             {
@@ -56,7 +57,17 @@ public static class ResponseFormatter
         sb.AppendLine(EscapeHtml(result.Answer));
         sb.AppendLine();
 
-        if (result.Sources.Count > 0)
+        if (result.SourceDocuments.Count > 0)
+        {
+            sb.AppendLine("📚 <b>Quellen:</b>");
+            foreach (var doc in result.SourceDocuments.Take(5))
+            {
+                var driveUrl = $"https://drive.google.com/open?id={doc.FileId}";
+                sb.AppendLine($"  • <a href=\"{driveUrl}\">{EscapeHtml(doc.Name)}</a>");
+            }
+            sb.AppendLine();
+        }
+        else if (result.Sources.Count > 0)
         {
             sb.AppendLine("📚 <b>Quellen:</b>");
             foreach (var source in result.Sources.Take(5))
@@ -86,8 +97,9 @@ public static class ResponseFormatter
         for (int i = 0; i < Math.Min(10, documents.Count); i++)
         {
             var doc = documents[i];
+            var driveUrl = $"https://drive.google.com/open?id={doc.FileId}";
 
-            sb.AppendLine($"{i + 1}. <b>{EscapeHtml(doc.Name)}</b>");
+            sb.AppendLine($"{i + 1}. <a href=\"{driveUrl}\"><b>{EscapeHtml(doc.Name)}</b></a>");
 
             if (doc.IndexedAt.HasValue)
             {
