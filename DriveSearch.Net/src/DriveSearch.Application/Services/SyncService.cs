@@ -43,10 +43,12 @@ public class SyncService
 
         try
         {
-            // Step 1: List all files from Google Drive
+            // Step 1: List all files and folders from Google Drive
             Console.WriteLine("Listing files from Google Drive...");
             var driveFiles = await _driveClient.ListAllFilesAsync(cancellationToken);
             Console.WriteLine($"Found {driveFiles.Count} files in Drive");
+
+            var folderNames = await _driveClient.GetFolderNamesAsync(cancellationToken);
 
             // Step 2: Get existing file IDs from database
             var dbFileIds = (await _documentRepository.GetAllFileIdsAsync()).ToHashSet();
@@ -71,7 +73,7 @@ public class SyncService
 
                 try
                 {
-                    var result = await ProcessFileAsync(file, cancellationToken);
+                    var result = await ProcessFileAsync(file, folderNames, cancellationToken);
                     if (result == FileProcessResult.Added)
                         stats.FilesAdded++;
                     else if (result == FileProcessResult.Updated)
@@ -105,6 +107,7 @@ public class SyncService
     /// </summary>
     private async Task<FileProcessResult> ProcessFileAsync(
         DriveFile file,
+        Dictionary<string, string> folderNames,
         CancellationToken cancellationToken)
     {
         // Check if file needs updating (compare modifiedTime)
@@ -130,6 +133,8 @@ public class SyncService
             var text = await _textExtractor.ExtractTextAsync(tempPath, file.MimeType);
 
             // Create/update document
+            var folderPath = file.ParentId != null && folderNames.TryGetValue(file.ParentId, out var fn) ? fn : null;
+
             var document = new Document
             {
                 FileId = file.Id,
@@ -139,7 +144,8 @@ public class SyncService
                 CreatedAt = file.CreatedTime,
                 ModifiedAt = file.ModifiedTime,
                 Text = text,
-                IndexedAt = DateTime.UtcNow
+                IndexedAt = DateTime.UtcNow,
+                FolderPath = folderPath
             };
 
             var documentId = await _documentRepository.UpsertAsync(document);

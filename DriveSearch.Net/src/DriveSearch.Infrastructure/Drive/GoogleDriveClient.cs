@@ -51,7 +51,7 @@ public class GoogleDriveClient
         {
             var request = service.Files.List();
             request.Q = query;
-            request.Fields = "nextPageToken, files(id, name, mimeType, size, createdTime, modifiedTime, owners)";
+            request.Fields = "nextPageToken, files(id, name, mimeType, size, createdTime, modifiedTime, owners, parents)";
             request.PageSize = 100;
             request.PageToken = pageToken;
             request.SupportsAllDrives = true;
@@ -71,7 +71,8 @@ public class GoogleDriveClient
                         Size = file.Size ?? 0,
                         CreatedTime = file.CreatedTime,
                         ModifiedTime = file.ModifiedTime,
-                        OwnerName = file.Owners?.FirstOrDefault()?.DisplayName
+                        OwnerName = file.Owners?.FirstOrDefault()?.DisplayName,
+                        ParentId = file.Parents?.FirstOrDefault()
                     });
                 }
             }
@@ -117,6 +118,38 @@ public class GoogleDriveClient
     }
 
     /// <summary>
+    /// Returns a dictionary mapping folder ID → folder name for all non-trashed folders.
+    /// </summary>
+    public async Task<Dictionary<string, string>> GetFolderNamesAsync(CancellationToken cancellationToken = default)
+    {
+        var service = await _authService.CreateDriveServiceAsync(cancellationToken: cancellationToken);
+        var result = new Dictionary<string, string>();
+        string? pageToken = null;
+
+        do
+        {
+            var request = service.Files.List();
+            request.Q = "mimeType='application/vnd.google-apps.folder' and trashed=false";
+            request.Fields = "nextPageToken, files(id, name)";
+            request.PageSize = 1000;
+            request.PageToken = pageToken;
+            request.SupportsAllDrives = true;
+            request.IncludeItemsFromAllDrives = true;
+
+            var response = await request.ExecuteAsync(cancellationToken);
+
+            if (response.Files != null)
+                foreach (var folder in response.Files)
+                    result[folder.Id] = folder.Name;
+
+            pageToken = response.NextPageToken;
+        }
+        while (pageToken != null);
+
+        return result;
+    }
+
+    /// <summary>
     /// Checks if a MIME type is a Google Workspace file (Docs, Sheets, Slides).
     /// </summary>
     private static bool IsGoogleWorkspaceFile(string mimeType)
@@ -137,4 +170,5 @@ public class DriveFile
     public DateTime? CreatedTime { get; set; }
     public DateTime? ModifiedTime { get; set; }
     public string? OwnerName { get; set; }
+    public string? ParentId { get; set; }
 }

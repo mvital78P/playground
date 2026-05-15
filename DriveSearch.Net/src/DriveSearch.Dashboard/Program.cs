@@ -186,6 +186,33 @@ app.MapGet("/api/sync/stats", async (DriveSearchContext db) =>
     }
 });
 
+// Get paginated documents list with optional search
+app.MapGet("/api/documents", async (DriveSearchContext db, string? search, int page = 1, int pageSize = 20) =>
+{
+    var query = db.Documents.AsQueryable();
+
+    if (!string.IsNullOrWhiteSpace(search))
+        query = query.Where(d => d.Name.Contains(search) || (d.FolderPath != null && d.FolderPath.Contains(search)));
+
+    var total = await query.CountAsync();
+    var documents = await query
+        .OrderBy(d => d.Name)
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .Select(d => new
+        {
+            d.FileId,
+            d.Name,
+            d.MimeType,
+            d.FolderPath,
+            d.ModifiedAt,
+            d.Size
+        })
+        .ToListAsync();
+
+    return Results.Ok(new { total, page, pageSize, documents });
+});
+
 // Trigger manual sync by calling SyncService HTTP endpoint
 app.MapPost("/api/sync/trigger", async (IHttpClientFactory httpClientFactory) =>
 {

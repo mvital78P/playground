@@ -92,6 +92,7 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<DriveSearchContext>();
     await context.Database.EnsureCreatedAsync();
+    await context.MigrateSchemaAsync();
     await context.InitializeFtsTableAsync();
 }
 

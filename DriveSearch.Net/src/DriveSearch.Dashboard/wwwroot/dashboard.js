@@ -9,6 +9,12 @@ let servicesRendered = false;
 let lastServicesData = null;
 let lastStatsData = null;
 
+// Documents state
+let docsPage = 1;
+let docsTotal = 0;
+const PAGE_SIZE = 20;
+let searchDebounceTimer = null;
+
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', () => {
     loadServices();
@@ -603,6 +609,90 @@ async function saveConfiguration(event) {
     } catch (error) {
         showNotification('Fehler beim Speichern', 'error');
     }
+}
+
+// Documents tab
+function debounceSearch() {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => loadDocuments(1), 350);
+}
+
+async function loadDocuments(page) {
+    if (page) docsPage = page;
+
+    const search = document.getElementById('doc-search')?.value ?? '';
+    const url = `${API_BASE}/documents?page=${docsPage}&pageSize=${PAGE_SIZE}` +
+        (search ? `&search=${encodeURIComponent(search)}` : '');
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        docsTotal = data.total;
+        renderDocsTable(data);
+    } catch (error) {
+        document.getElementById('docs-table-container').innerHTML =
+            `<p style="color:var(--danger);text-align:center">Fehler beim Laden der Dokumente</p>`;
+    }
+}
+
+function mimeLabel(mimeType) {
+    if (mimeType.includes('pdf')) return 'PDF';
+    if (mimeType.includes('wordprocessingml') || mimeType.includes('google-apps.document')) return 'Docs';
+    if (mimeType.includes('spreadsheetml') || mimeType.includes('google-apps.spreadsheet')) return 'Sheets';
+    if (mimeType.includes('presentationml') || mimeType.includes('google-apps.presentation')) return 'Slides';
+    return mimeType.split('/').pop().substring(0, 8);
+}
+
+function renderDocsTable(data) {
+    const totalPages = Math.ceil(data.total / PAGE_SIZE);
+    const from = (docsPage - 1) * PAGE_SIZE + 1;
+    const to = Math.min(docsPage * PAGE_SIZE, data.total);
+
+    const rows = data.documents.map(doc => {
+        const driveUrl = `https://drive.google.com/open?id=${doc.fileId}`;
+        const modified = doc.modifiedAt ? new Date(doc.modifiedAt).toLocaleDateString('de-DE') : '—';
+        const folder = doc.folderPath
+            ? `<span class="material-symbols-rounded" style="font-size:14px;vertical-align:middle;margin-right:4px">folder</span>${escapeHtml(doc.folderPath)}`
+            : '<span style="opacity:0.4">—</span>';
+
+        return `
+            <tr>
+                <td><a href="${driveUrl}" target="_blank" rel="noopener">${escapeHtml(doc.name)}</a></td>
+                <td class="folder-cell">${folder}</td>
+                <td><span class="mime-badge">${mimeLabel(doc.mimeType)}</span></td>
+                <td style="color:var(--on-surface-variant)">${modified}</td>
+            </tr>`;
+    }).join('');
+
+    document.getElementById('docs-table-container').innerHTML = `
+        <table class="docs-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Ordner</th>
+                    <th>Typ</th>
+                    <th>Geändert</th>
+                </tr>
+            </thead>
+            <tbody>${rows || '<tr><td colspan="4" style="text-align:center;opacity:0.5;padding:30px">Keine Dokumente gefunden</td></tr>'}</tbody>
+        </table>
+        <div class="pagination">
+            <span>${data.total > 0 ? `${from}–${to} von ${data.total}` : '0 Dokumente'}</span>
+            <div class="pagination-buttons">
+                <button class="btn btn-primary btn-sm" onclick="loadDocuments(${docsPage - 1})" ${docsPage <= 1 ? 'disabled' : ''}>
+                    <span class="material-symbols-rounded">chevron_left</span>
+                </button>
+                <span style="padding:8px 4px">${docsPage} / ${totalPages || 1}</span>
+                <button class="btn btn-primary btn-sm" onclick="loadDocuments(${docsPage + 1})" ${docsPage >= totalPages ? 'disabled' : ''}>
+                    <span class="material-symbols-rounded">chevron_right</span>
+                </button>
+            </div>
+        </div>`;
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // Show notification
