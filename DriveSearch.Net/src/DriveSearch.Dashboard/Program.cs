@@ -160,16 +160,13 @@ app.MapGet("/api/sync/stats", async (DriveSearchContext db) =>
     {
         var documentCount = await db.Documents.CountAsync();
         var embeddingCount = await db.Embeddings.CountAsync();
-
-        var lastDocument = await db.Documents
-            .OrderByDescending(d => d.IndexedAt)
-            .FirstOrDefaultAsync();
+        var lastSyncTime = await db.GetLastSyncAtAsync();
 
         return Results.Ok(new
         {
             documentCount,
             embeddingCount,
-            lastSyncTime = lastDocument?.IndexedAt,
+            lastSyncTime,
             hasData = documentCount > 0
         });
     }

@@ -53,6 +53,7 @@ public class DocumentRepository : IDocumentRepository
             existing.ModifiedAt = document.ModifiedAt;
             existing.Text = document.Text;
             existing.IndexedAt = document.IndexedAt ?? DateTime.UtcNow;
+            existing.FolderPath = document.FolderPath;
 
             _context.Documents.Update(existing);
             await _context.SaveChangesAsync();
@@ -126,6 +127,22 @@ public class DocumentRepository : IDocumentRepository
             .OrderByDescending(d => d.IndexedAt)
             .Take(limit)
             .ToListAsync();
+    }
+
+    public async Task UpdateLastSyncAtAsync(DateTime syncTime)
+    {
+        await _context.UpdateLastSyncAtAsync(syncTime);
+    }
+
+    public async Task UpdateFolderPathAsync(string fileId, string folderPath)
+    {
+        var document = await GetByFileIdAsync(fileId);
+        if (document != null)
+        {
+            document.FolderPath = folderPath;
+            _context.Documents.Update(document);
+            await _context.SaveChangesAsync();
+        }
     }
 
     public async Task<(int total, List<Document> documents)> ListDocumentsAsync(int limit, int offset, string? mimeFilter)

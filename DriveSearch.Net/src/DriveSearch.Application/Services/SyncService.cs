@@ -90,6 +90,7 @@ public class SyncService
 
             stats.EndTime = DateTime.UtcNow;
             stats.Success = true;
+            await _documentRepository.UpdateLastSyncAtAsync(stats.EndTime);
         }
         catch (Exception ex)
         {
@@ -115,7 +116,11 @@ public class SyncService
 
         if (existing != null && existing.ModifiedAt == file.ModifiedTime)
         {
-            // File unchanged, skip
+            // File unchanged — but backfill FolderPath if it was added after initial sync
+            if (existing.FolderPath == null && file.ParentId != null && folderNames.TryGetValue(file.ParentId, out var fn))
+            {
+                await _documentRepository.UpdateFolderPathAsync(file.Id, fn);
+            }
             return FileProcessResult.Skipped;
         }
 

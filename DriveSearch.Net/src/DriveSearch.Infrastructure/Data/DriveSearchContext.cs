@@ -101,6 +101,25 @@ public class DriveSearchContext : DbContext
     public async Task MigrateSchemaAsync()
     {
         try { await Database.ExecuteSqlRawAsync("ALTER TABLE documents ADD COLUMN FolderPath TEXT"); } catch { }
+        await Database.ExecuteSqlRawAsync(
+            "CREATE TABLE IF NOT EXISTS sync_state (key TEXT PRIMARY KEY, value TEXT)");
+    }
+
+    public async Task UpdateLastSyncAtAsync(DateTime syncTime)
+    {
+        await Database.ExecuteSqlRawAsync(
+            "INSERT OR REPLACE INTO sync_state (key, value) VALUES ('last_sync_at', {0})",
+            syncTime.ToString("O"));
+    }
+
+    public async Task<DateTime?> GetLastSyncAtAsync()
+    {
+        var rows = await Database
+            .SqlQueryRaw<string>("SELECT value FROM sync_state WHERE key = 'last_sync_at'")
+            .ToListAsync();
+        if (rows.Count == 0) return null;
+        return DateTime.TryParse(rows[0], null, System.Globalization.DateTimeStyles.RoundtripKind, out var dt)
+            ? dt : null;
     }
 
     /// <summary>

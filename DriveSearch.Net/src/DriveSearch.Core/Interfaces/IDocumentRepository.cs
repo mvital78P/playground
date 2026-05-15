@@ -52,4 +52,14 @@ public interface IDocumentRepository
     /// Lists documents with pagination and optional MIME type filter.
     /// </summary>
     Task<(int total, List<Document> documents)> ListDocumentsAsync(int limit, int offset, string? mimeFilter);
+
+    /// <summary>
+    /// Updates only the FolderPath field for a document by its Google Drive file ID.
+    /// </summary>
+    Task UpdateFolderPathAsync(string fileId, string folderPath);
+
+    /// <summary>
+    /// Persists the timestamp of the most recent completed sync run.
+    /// </summary>
+    Task UpdateLastSyncAtAsync(DateTime syncTime);
 }
