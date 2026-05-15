@@ -116,11 +116,24 @@ public class SyncService
 
         if (existing != null && existing.ModifiedAt == file.ModifiedTime)
         {
-            // File unchanged — but backfill FolderPath if it was added after initial sync
+            // Backfill FolderPath if it was added after initial sync
             if (existing.FolderPath == null && file.ParentId != null && folderNames.TryGetValue(file.ParentId, out var fn))
-            {
                 await _documentRepository.UpdateFolderPathAsync(file.Id, fn);
+
+            // Backfill chunks for documents indexed before chunking was introduced
+            if (!string.IsNullOrWhiteSpace(existing.Text) && !await _documentRepository.HasChunksAsync(existing.Id))
+            {
+                Console.WriteLine($"Backfilling chunks for: {existing.Name}");
+                await _documentRepository.DeleteChunksAsync(existing.Id);
+                var backfillChunks = TextChunker.Split(existing.Text);
+                foreach (var (chunk, idx) in backfillChunks.Select((c, i) => (c, i)))
+                {
+                    var chunkId = await _documentRepository.SaveChunkAsync(existing.Id, idx, chunk);
+                    var emb = await _embeddingProvider.GetEmbeddingAsync(chunk);
+                    await _documentRepository.SaveChunkEmbeddingAsync(existing.Id, chunkId, emb);
+                }
             }
+
             return FileProcessResult.Skipped;
         }
 
@@ -155,20 +168,27 @@ public class SyncService
 
             var documentId = await _documentRepository.UpsertAsync(document);
 
-            // Generate and save embedding
-            // Use text for embedding if available, otherwise use filename
-            var embeddingText = string.IsNullOrWhiteSpace(text) ? file.Name : text;
+            // Chunk and embed
+            await _documentRepository.DeleteChunksAsync(documentId);
 
-            // Truncate text to avoid token limits (8000 chars)
-            if (embeddingText.Length > 8000)
+            if (string.IsNullOrWhiteSpace(text))
             {
-                embeddingText = embeddingText.Substring(0, 8000);
+                // No extractable text — embed filename as a single document-level fallback
+                Console.WriteLine($"Generating filename embedding for: {file.Name}");
+                var embedding = await _embeddingProvider.GetEmbeddingAsync(file.Name);
+                await _documentRepository.SaveEmbeddingAsync(documentId, embedding);
             }
-
-            Console.WriteLine($"Generating embedding for: {file.Name}");
-            var embedding = await _embeddingProvider.GetEmbeddingAsync(embeddingText);
-
-            await _documentRepository.SaveEmbeddingAsync(documentId, embedding);
+            else
+            {
+                var chunks = TextChunker.Split(text);
+                Console.WriteLine($"Generating {chunks.Count} chunk embeddings for: {file.Name}");
+                foreach (var (chunk, idx) in chunks.Select((c, i) => (c, i)))
+                {
+                    var chunkId = await _documentRepository.SaveChunkAsync(documentId, idx, chunk);
+                    var embedding = await _embeddingProvider.GetEmbeddingAsync(chunk);
+                    await _documentRepository.SaveChunkEmbeddingAsync(documentId, chunkId, embedding);
+                }
+            }
 
             Console.WriteLine($"✓ Processed: {file.Name}");
 

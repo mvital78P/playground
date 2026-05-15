@@ -55,8 +55,4 @@ public class Document
     /// </summary>
     public string? FolderPath { get; set; }
 
-    /// <summary>
-    /// Navigation property to associated embedding vector
-    /// </summary>
-    public Embedding? Embedding { get; set; }
 }

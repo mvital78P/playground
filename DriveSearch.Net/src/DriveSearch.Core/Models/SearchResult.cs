@@ -23,7 +23,13 @@ public class SearchResult
     public string Source { get; set; } = "unknown";
 
     /// <summary>
-    /// Text preview/snippet (first 200 chars or relevant excerpt)
+    /// Short preview for display (first 200 chars of the matched text).
     /// </summary>
     public string? Preview { get; set; }
+
+    /// <summary>
+    /// Full text of the matched chunk, used as RAG context.
+    /// Null for FTS results or pre-chunking document embeddings.
+    /// </summary>
+    public string? ChunkText { get; set; }
 }

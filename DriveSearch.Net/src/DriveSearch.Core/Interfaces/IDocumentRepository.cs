@@ -62,4 +62,16 @@ public interface IDocumentRepository
     /// Persists the timestamp of the most recent completed sync run.
     /// </summary>
     Task UpdateLastSyncAtAsync(DateTime syncTime);
+
+    Task<int> SaveChunkAsync(int documentId, int chunkIndex, string text);
+
+    /// <summary>
+    /// Deletes all chunks and their embeddings for a document.
+    /// Also removes any legacy document-level embedding.
+    /// </summary>
+    Task DeleteChunksAsync(int documentId);
+
+    Task<bool> HasChunksAsync(int documentId);
+
+    Task SaveChunkEmbeddingAsync(int documentId, int chunkId, float[] vector);
 }

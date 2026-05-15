@@ -11,19 +11,15 @@ public class Embedding
     /// </summary>
     public int Id { get; set; }
 
-    /// <summary>
-    /// Foreign key to the associated document
-    /// </summary>
     public int DocumentId { get; set; }
 
     /// <summary>
-    /// Binary blob containing the embedding vector (serialized float32 array)
-    /// Dimensions: 3072 for Gemini, 768 for Ollama/LM Studio
+    /// If set, this embedding belongs to a specific chunk rather than the whole document.
     /// </summary>
+    public int? ChunkId { get; set; }
+
     public required byte[] Vector { get; set; }
 
-    /// <summary>
-    /// Navigation property to the associated document
-    /// </summary>
     public Document? Document { get; set; }
+    public DocumentChunk? Chunk { get; set; }
 }

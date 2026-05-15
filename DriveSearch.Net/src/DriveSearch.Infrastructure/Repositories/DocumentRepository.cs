@@ -35,7 +35,6 @@ public class DocumentRepository : IDocumentRepository
     public async Task<Document?> GetByIdAsync(int id)
     {
         return await _context.Documents
-            .Include(d => d.Embedding)
             .FirstOrDefaultAsync(d => d.Id == id);
     }
 
@@ -132,6 +131,74 @@ public class DocumentRepository : IDocumentRepository
     public async Task UpdateLastSyncAtAsync(DateTime syncTime)
     {
         await _context.UpdateLastSyncAtAsync(syncTime);
+    }
+
+    public async Task<int> SaveChunkAsync(int documentId, int chunkIndex, string text)
+    {
+        var chunk = new DocumentChunk { DocumentId = documentId, ChunkIndex = chunkIndex, Text = text };
+        _context.DocumentChunks.Add(chunk);
+        await _context.SaveChangesAsync();
+        return chunk.Id;
+    }
+
+    public async Task DeleteChunksAsync(int documentId)
+    {
+        // Remove legacy document-level embedding (pre-chunking)
+        var docEmbeddings = await _context.Embeddings
+            .Where(e => e.DocumentId == documentId && e.ChunkId == null)
+            .ToListAsync();
+        _context.Embeddings.RemoveRange(docEmbeddings);
+
+        // Remove chunk embeddings
+        var chunkIds = await _context.DocumentChunks
+            .Where(c => c.DocumentId == documentId)
+            .Select(c => c.Id)
+            .ToListAsync();
+
+        if (chunkIds.Count > 0)
+        {
+            var chunkEmbeddings = await _context.Embeddings
+                .Where(e => e.ChunkId.HasValue && chunkIds.Contains(e.ChunkId.Value))
+                .ToListAsync();
+            _context.Embeddings.RemoveRange(chunkEmbeddings);
+        }
+
+        // Remove chunks themselves
+        await _context.DocumentChunks
+            .Where(c => c.DocumentId == documentId)
+            .ExecuteDeleteAsync();
+
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<bool> HasChunksAsync(int documentId)
+    {
+        return await _context.DocumentChunks.AnyAsync(c => c.DocumentId == documentId);
+    }
+
+    public async Task SaveChunkEmbeddingAsync(int documentId, int chunkId, float[] vector)
+    {
+        var vectorBlob = VectorSearchService.SerializeVector(vector);
+
+        var existing = await _context.Embeddings
+            .FirstOrDefaultAsync(e => e.ChunkId == chunkId);
+
+        if (existing != null)
+        {
+            existing.Vector = vectorBlob;
+            _context.Embeddings.Update(existing);
+        }
+        else
+        {
+            _context.Embeddings.Add(new Embedding
+            {
+                DocumentId = documentId,
+                ChunkId = chunkId,
+                Vector = vectorBlob
+            });
+        }
+
+        await _context.SaveChangesAsync();
     }
 
     public async Task UpdateFolderPathAsync(string fileId, string folderPath)

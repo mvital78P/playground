@@ -59,10 +59,22 @@ public class RagService
             };
         }
 
-        // Step 3: Extract snippets from documents
-        var context = _snippetExtractor.ExtractSnippetsFromDocuments(
-            searchResults.Select(r => r.Document),
-            query);
+        // Step 3: Build context from chunk texts when available (better precision),
+        // falling back to snippet extraction on full document text for FTS-only results.
+        string context;
+        if (searchResults.Any(r => r.ChunkText != null))
+        {
+            context = string.Join("\n\n---\n\n", searchResults.Select(r =>
+            {
+                var body = r.ChunkText ?? (r.Document.Text is { } t ? t[..Math.Min(1500, t.Length)] : "");
+                return $"[{r.Document.Name}]\n{body}";
+            }));
+        }
+        else
+        {
+            context = _snippetExtractor.ExtractSnippetsFromDocuments(
+                searchResults.Select(r => r.Document), query);
+        }
 
         if (string.IsNullOrWhiteSpace(context))
         {

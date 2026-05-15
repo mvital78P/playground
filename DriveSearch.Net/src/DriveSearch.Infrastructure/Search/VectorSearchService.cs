@@ -46,6 +46,8 @@ public class VectorSearchService
         var candidateLimit = limit * 3;
 
         using var command = connection.CreateCommand();
+        // Join document_chunks when the embedding is chunk-based (ChunkId not null).
+        // COALESCE returns the chunk text for chunk embeddings, document text otherwise.
         command.CommandText = @"
             SELECT
                 d.Id,
@@ -55,11 +57,14 @@ public class VectorSearchService
                 d.Size,
                 d.CreatedAt,
                 d.ModifiedAt,
-                d.Text,
                 d.IndexedAt,
+                d.FolderPath,
+                c.Text            AS ChunkText,
+                COALESCE(c.Text, d.Text) AS MatchText,
                 vec_distance_cosine(e.Vector, @vector) AS Distance
             FROM embeddings e
             JOIN documents d ON d.Id = e.DocumentId
+            LEFT JOIN document_chunks c ON c.Id = e.ChunkId
             ORDER BY Distance ASC
             LIMIT @limit";
 
@@ -67,51 +72,57 @@ public class VectorSearchService
         command.Parameters.AddWithValue("@limit", candidateLimit);
 
         var results = new List<SearchResult>();
+        var seenDocuments = new HashSet<string>(); // deduplicate by FileId
 
         using var reader = await command.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
             var distance = reader.GetDouble(reader.GetOrdinal("Distance"));
 
-            // Filter by distance threshold
             if (distance >= _maxDistance)
+                continue;
+
+            var fileId = reader.GetString(reader.GetOrdinal("FileId"));
+
+            // Keep only the best-scoring chunk per document
+            if (!seenDocuments.Add(fileId))
                 continue;
 
             var document = new Document
             {
                 Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                FileId = reader.GetString(reader.GetOrdinal("FileId")),
+                FileId = fileId,
                 Name = reader.GetString(reader.GetOrdinal("Name")),
                 MimeType = reader.GetString(reader.GetOrdinal("MimeType")),
                 Size = reader.GetInt64(reader.GetOrdinal("Size")),
                 CreatedAt = reader.IsDBNull(reader.GetOrdinal("CreatedAt"))
-                    ? null
-                    : DateTime.Parse(reader.GetString(reader.GetOrdinal("CreatedAt"))),
+                    ? null : DateTime.Parse(reader.GetString(reader.GetOrdinal("CreatedAt"))),
                 ModifiedAt = reader.IsDBNull(reader.GetOrdinal("ModifiedAt"))
-                    ? null
-                    : DateTime.Parse(reader.GetString(reader.GetOrdinal("ModifiedAt"))),
-                Text = reader.IsDBNull(reader.GetOrdinal("Text"))
-                    ? null
-                    : reader.GetString(reader.GetOrdinal("Text")),
+                    ? null : DateTime.Parse(reader.GetString(reader.GetOrdinal("ModifiedAt"))),
                 IndexedAt = reader.IsDBNull(reader.GetOrdinal("IndexedAt"))
-                    ? null
-                    : DateTime.Parse(reader.GetString(reader.GetOrdinal("IndexedAt")))
+                    ? null : DateTime.Parse(reader.GetString(reader.GetOrdinal("IndexedAt"))),
+                FolderPath = reader.IsDBNull(reader.GetOrdinal("FolderPath"))
+                    ? null : reader.GetString(reader.GetOrdinal("FolderPath"))
             };
 
-            var text = document.Text ?? "";
-            var preview = text.Length > 200
-                ? text.Substring(0, 200).Replace("\n", " ")
-                : text;
+            var chunkText = reader.IsDBNull(reader.GetOrdinal("ChunkText"))
+                ? null : reader.GetString(reader.GetOrdinal("ChunkText"));
+            var matchText = reader.IsDBNull(reader.GetOrdinal("MatchText"))
+                ? "" : reader.GetString(reader.GetOrdinal("MatchText"));
+
+            var preview = matchText.Length > 200
+                ? matchText.Substring(0, 200).Replace("\n", " ")
+                : matchText.Replace("\n", " ");
 
             results.Add(new SearchResult
             {
                 Document = document,
                 Score = distance,
                 Source = "vector",
+                ChunkText = chunkText,
                 Preview = preview
             });
 
-            // Stop after reaching the requested limit
             if (results.Count >= limit)
                 break;
         }

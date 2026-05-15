@@ -14,6 +14,7 @@ public class DriveSearchContext : DbContext
 
     public DbSet<Document> Documents => Set<Document>();
     public DbSet<Embedding> Embeddings => Set<Embedding>();
+    public DbSet<DocumentChunk> DocumentChunks => Set<DocumentChunk>();
 
     public DriveSearchContext(DbContextOptions<DriveSearchContext> options) : base(options)
     {
@@ -79,13 +80,30 @@ public class DriveSearchContext : DbContext
                 .IsRequired()
                 .HasColumnType("BLOB");
 
-            entity.HasIndex(e => e.DocumentId)
-                .IsUnique();
-
-            // One-to-one relationship: Document <-> Embedding
+            // No unique index on DocumentId — multiple chunk embeddings per document
             entity.HasOne(e => e.Document)
-                .WithOne(d => d.Embedding)
-                .HasForeignKey<Embedding>(e => e.DocumentId)
+                .WithMany()
+                .HasForeignKey(e => e.DocumentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Chunk)
+                .WithMany()
+                .HasForeignKey(e => e.ChunkId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired(false);
+        });
+
+        // Configure DocumentChunk entity
+        modelBuilder.Entity<DocumentChunk>(entity =>
+        {
+            entity.ToTable("document_chunks");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Text).IsRequired().HasColumnType("TEXT");
+
+            entity.HasOne(e => e.Document)
+                .WithMany()
+                .HasForeignKey(e => e.DocumentId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -101,6 +119,24 @@ public class DriveSearchContext : DbContext
     public async Task MigrateSchemaAsync()
     {
         try { await Database.ExecuteSqlRawAsync("ALTER TABLE documents ADD COLUMN FolderPath TEXT"); } catch { }
+
+        // Drop old unique index so multiple chunk embeddings per document are allowed
+        await Database.ExecuteSqlRawAsync("DROP INDEX IF EXISTS IX_embeddings_DocumentId");
+
+        // Add ChunkId to embeddings (null = document-level fallback, non-null = chunk-based)
+        try { await Database.ExecuteSqlRawAsync("ALTER TABLE embeddings ADD COLUMN ChunkId INTEGER"); } catch { }
+
+        // Chunk storage table
+        await Database.ExecuteSqlRawAsync(@"
+            CREATE TABLE IF NOT EXISTS document_chunks (
+                Id    INTEGER PRIMARY KEY AUTOINCREMENT,
+                DocumentId INTEGER NOT NULL,
+                ChunkIndex INTEGER NOT NULL,
+                Text  TEXT NOT NULL
+            )");
+        await Database.ExecuteSqlRawAsync(
+            "CREATE INDEX IF NOT EXISTS IX_document_chunks_DocumentId ON document_chunks(DocumentId)");
+
         await Database.ExecuteSqlRawAsync(
             "CREATE TABLE IF NOT EXISTS sync_state (key TEXT PRIMARY KEY, value TEXT)");
     }
